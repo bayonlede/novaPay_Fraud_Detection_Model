@@ -18,16 +18,36 @@ app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # Load the trained model
-MODEL_PATH = '../best_model/rf_model_with_thresholds.pkl'
+import os
+
+def get_model_path():
+    """Get the model path, checking multiple locations"""
+    possible_paths = [
+        os.path.join(os.path.dirname(__file__), 'model', 'rf_model_with_thresholds.pkl'),
+        os.path.join(os.path.dirname(__file__), '..', 'best_model', 'rf_model_with_thresholds.pkl'),
+        'model/rf_model_with_thresholds.pkl',
+        '../best_model/rf_model_with_thresholds.pkl',
+    ]
+    for path in possible_paths:
+        if os.path.exists(path):
+            return path
+    return possible_paths[0]  # Default to first option
+
+MODEL_PATH = get_model_path()
 
 def load_model():
     """Load the trained Random Forest model with thresholds"""
     try:
+        print(f"Loading model from: {MODEL_PATH}")
         with open(MODEL_PATH, 'rb') as f:
             model_package = pickle.load(f)
+        print("Model loaded successfully!")
         return model_package
     except FileNotFoundError:
         print(f"Model file not found at {MODEL_PATH}")
+        return None
+    except Exception as e:
+        print(f"Error loading model: {e}")
         return None
 
 model_package = load_model()
@@ -249,6 +269,9 @@ def get_options():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    import os
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    app.run(debug=debug, host='0.0.0.0', port=port)
 
 
