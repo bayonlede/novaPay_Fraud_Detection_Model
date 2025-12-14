@@ -22,18 +22,24 @@ import os
 
 def get_model_path():
     """Get the model path, checking multiple locations"""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
     possible_paths = [
-        os.path.join(os.path.dirname(__file__), 'model', 'rf_model_with_thresholds.pkl'),
-        os.path.join(os.path.dirname(__file__), '..', 'best_model', 'rf_model_with_thresholds.pkl'),
+        os.path.join(base_dir, 'model', 'rf_model_with_thresholds.pkl'),
+        os.path.join(base_dir, '..', 'best_model', 'rf_model_with_thresholds.pkl'),
+        '/app/model/rf_model_with_thresholds.pkl',  # Docker path
         'model/rf_model_with_thresholds.pkl',
         '../best_model/rf_model_with_thresholds.pkl',
     ]
+    print(f"Base directory: {base_dir}")
+    print(f"Checking paths: {possible_paths}")
     for path in possible_paths:
+        print(f"Checking: {path} - Exists: {os.path.exists(path)}")
         if os.path.exists(path):
             return path
     return possible_paths[0]  # Default to first option
 
 MODEL_PATH = get_model_path()
+print(f"Selected model path: {MODEL_PATH}")
 
 def load_model():
     """Load the trained Random Forest model with thresholds"""
@@ -42,15 +48,21 @@ def load_model():
         with open(MODEL_PATH, 'rb') as f:
             model_package = pickle.load(f)
         print("Model loaded successfully!")
+        print(f"Model keys: {model_package.keys()}")
         return model_package
     except FileNotFoundError:
         print(f"Model file not found at {MODEL_PATH}")
+        print(f"Current directory: {os.getcwd()}")
+        print(f"Directory contents: {os.listdir('.')}")
         return None
     except Exception as e:
         print(f"Error loading model: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 model_package = load_model()
+print(f"Model package loaded: {model_package is not None}")
 
 # Define feature categories for encoding
 CATEGORICAL_MAPPINGS = {
@@ -146,6 +158,15 @@ def preprocess_input(data):
 def index():
     """Render the main page"""
     return render_template('index.html')
+
+
+@app.route('/health')
+def health():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'model_loaded': model_package is not None
+    })
 
 
 @app.route('/predict', methods=['POST'])
