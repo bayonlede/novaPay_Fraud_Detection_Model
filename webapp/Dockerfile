@@ -9,12 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY . .
 
-# Railway uses PORT env variable
-ENV PORT=8080
-
 # Expose port
-EXPOSE $PORT
+EXPOSE 8080
 
-# Run the application with shell to expand $PORT
-CMD gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120
+# Run the application
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8080"]
 
