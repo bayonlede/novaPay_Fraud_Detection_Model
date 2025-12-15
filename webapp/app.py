@@ -1,12 +1,13 @@
 """
 NovaPay Fraud Detection Web Application
-Flask backend for serving the ML model and handling predictions
+Flask backend for serving the LightGBM model with SHAP explanations
 """
 
 import os
 import pickle
 import warnings
 import numpy as np
+import shap
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 
@@ -21,9 +22,9 @@ def get_model_path():
     """Get the model path, checking multiple locations"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     possible_paths = [
-        os.path.join(base_dir, 'model', 'rf_model_with_thresholds.pkl'),
-        os.path.join(base_dir, '..', 'best_model', 'rf_model_with_thresholds.pkl'),
-        'model/rf_model_with_thresholds.pkl',
+        os.path.join(base_dir, 'model', 'lgb_model_with_thresholds.pkl'),
+        os.path.join(base_dir, '..', 'best_model', 'lgb_model_with_thresholds.pkl'),
+        'model/lgb_model_with_thresholds.pkl',
     ]
     for path in possible_paths:
         if os.path.exists(path):
@@ -34,14 +35,25 @@ def get_model_path():
 
 MODEL_PATH = get_model_path()
 
+# Global variables for model and explainer
+model_package = None
+shap_explainer = None
+
 def load_model():
-    """Load the trained Random Forest model with thresholds"""
+    """Load the trained LightGBM model with thresholds"""
+    global shap_explainer
     try:
         print(f"Loading model from: {MODEL_PATH}")
         with open(MODEL_PATH, 'rb') as f:
-            model_package = pickle.load(f)
+            loaded_package = pickle.load(f)
         print("Model loaded successfully!")
-        return model_package
+        
+        # Initialize SHAP explainer for LightGBM
+        model = loaded_package['model']
+        shap_explainer = shap.TreeExplainer(model)
+        print("SHAP explainer initialized successfully!")
+        
+        return loaded_package
     except Exception as e:
         print(f"Error loading model: {e}")
         return None
@@ -74,6 +86,35 @@ FEATURE_ORDER = [
     'period_of_the_day', 'fee_bracket', 'ip_risk_score_bracket',
     'device_trust_bucket'
 ]
+
+# Human-readable feature names for SHAP explanations
+FEATURE_DISPLAY_NAMES = {
+    'home_country': 'Home Country',
+    'source_currency': 'Source Currency',
+    'dest_currency': 'Destination Currency',
+    'channel': 'Transaction Channel',
+    'amount_src': 'Source Amount',
+    'amount_usd': 'Amount (USD)',
+    'fee': 'Transaction Fee',
+    'exchange_rate_src_to_dest': 'Exchange Rate',
+    'new_device': 'New Device',
+    'ip_country': 'IP Country',
+    'location_mismatch': 'Location Mismatch',
+    'ip_risk_score': 'IP Risk Score',
+    'kyc_tier': 'KYC Tier',
+    'account_age_days': 'Account Age',
+    'device_trust_score': 'Device Trust Score',
+    'chargeback_history_count': 'Chargeback History',
+    'risk_score_internal': 'Internal Risk Score',
+    'txn_velocity_1h': 'Txns (1 Hour)',
+    'txn_velocity_24h': 'Txns (24 Hours)',
+    'corridor_risk': 'Corridor Risk',
+    'days_only': 'Day of Week',
+    'period_of_the_day': 'Time Period',
+    'fee_bracket': 'Fee Risk Bracket',
+    'ip_risk_score_bracket': 'IP Risk Bracket',
+    'device_trust_bucket': 'Device Trust Bucket'
+}
 
 ROBUST_SCALE_PARAMS = {
     'amount_src': {'median': 200.0, 'iqr': 300.0},
@@ -123,6 +164,47 @@ def preprocess_input(data):
     return np.array(feature_array).reshape(1, -1)
 
 
+def get_shap_explanations(features, top_n=5):
+    """Get SHAP explanations for a prediction"""
+    global shap_explainer
+    
+    if shap_explainer is None:
+        return []
+    
+    try:
+        # Get SHAP values for the prediction
+        shap_values = shap_explainer.shap_values(features)
+        
+        # Handle the case where SHAP returns a list (for binary classification)
+        if isinstance(shap_values, list):
+            # Use the positive class (fraud) SHAP values
+            shap_vals = shap_values[1][0] if len(shap_values) > 1 else shap_values[0][0]
+        else:
+            shap_vals = shap_values[0]
+        
+        # Create feature-impact pairs
+        feature_impacts = []
+        for i, feature_name in enumerate(FEATURE_ORDER):
+            impact = float(shap_vals[i])
+            display_name = FEATURE_DISPLAY_NAMES.get(feature_name, feature_name)
+            feature_impacts.append({
+                'feature': display_name,
+                'feature_key': feature_name,
+                'impact': impact,
+                'abs_impact': abs(impact),
+                'direction': 'increases' if impact > 0 else 'decreases'
+            })
+        
+        # Sort by absolute impact and get top N
+        feature_impacts.sort(key=lambda x: x['abs_impact'], reverse=True)
+        top_explanations = feature_impacts[:top_n]
+        
+        return top_explanations
+    except Exception as e:
+        print(f"Error getting SHAP explanations: {e}")
+        return []
+
+
 @app.route('/')
 def index():
     """Render the main page"""
@@ -134,13 +216,15 @@ def health():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'model_loaded': model_package is not None
+        'model_loaded': model_package is not None,
+        'shap_enabled': shap_explainer is not None,
+        'model_type': 'LightGBM'
     })
 
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Handle fraud prediction requests"""
+    """Handle fraud prediction requests with SHAP explanations"""
     try:
         data = request.json
         
@@ -157,6 +241,9 @@ def predict():
         
         fraud_probability = float(model.predict_proba(features)[0][1])
         is_fraud_best = fraud_probability >= best_threshold
+        
+        # Get SHAP explanations
+        shap_explanations = get_shap_explanations(features, top_n=5)
         
         if fraud_probability >= 0.7:
             risk_level, risk_color = 'CRITICAL', '#dc2626'
@@ -187,7 +274,8 @@ def predict():
                 'best': round(best_threshold * 100, 2),
                 'default': round(default_threshold * 100, 2)
             },
-            'recommendation': recommendations.get(risk_level)
+            'recommendation': recommendations.get(risk_level),
+            'shap_explanations': shap_explanations
         })
         
     except Exception as e:

@@ -906,6 +906,158 @@
                 transform: translateY(0);
             }
         }
+
+        /* SHAP Explanations Styles */
+        .shap-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+
+        .shap-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .shap-title svg {
+            color: var(--accent-secondary);
+        }
+
+        .shap-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .shap-explanations {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .shap-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .shap-feature-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .shap-feature-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .shap-impact-value {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .shap-impact-value.positive {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+        }
+
+        .shap-impact-value.negative {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+        }
+
+        .shap-bar-container {
+            position: relative;
+            height: 8px;
+            background: var(--bg-input);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .shap-bar-center {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border-color);
+            transform: translateX(-50%);
+        }
+
+        .shap-bar {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease-out;
+        }
+
+        .shap-bar.positive {
+            left: 50%;
+            background: linear-gradient(90deg, #f87171, #ef4444);
+        }
+
+        .shap-bar.negative {
+            right: 50%;
+            background: linear-gradient(270deg, #4ade80, #22c55e);
+        }
+
+        .shap-direction {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .shap-direction.positive {
+            color: #f87171;
+        }
+
+        .shap-direction.negative {
+            color: #4ade80;
+        }
+
+        .shap-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.positive {
+            background: #ef4444;
+        }
+
+        .legend-dot.negative {
+            background: #22c55e;
+        }
     </style>
 </head>
 <body>
@@ -1288,18 +1440,35 @@
                         </div>
                     </div>
 
+                    <!-- SHAP Explanations Section -->
+                    <div class="shap-section" id="shap-section" style="display: none;">
+                        <h4 class="shap-title">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 16v-4M12 8h.01"/>
+                            </svg>
+                            Why This Prediction? (SHAP Analysis)
+                        </h4>
+                        <p class="shap-subtitle">Top factors influencing the fraud risk score</p>
+                        <div class="shap-explanations" id="shap-explanations">
+                            <!-- SHAP bars will be inserted here -->
+                        </div>
+                    </div>
+
                     <!-- Model Info -->
                     <div class="model-info">
                         <div class="model-badge">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                             </svg>
-                            <span>Random Forest Classifier</span>
+                            <span>LightGBM Classifier</span>
                         </div>
                         <div class="model-stats">
-                            <span>Accuracy: 98.5%</span>
+                            <span>Accuracy: 98%</span>
                             <span>•</span>
-                            <span>F1-Score: 0.91</span>
+                            <span>F1-Score: 0.88</span>
+                            <span>•</span>
+                            <span>SHAP Enabled</span>
                         </div>
                     </div>
                 </div>
@@ -1309,7 +1478,7 @@
         <!-- Footer -->
         <footer class="footer">
             <p>© 2024 NovaPay Fraud Detection System • Powered by Machine Learning</p>
-            <p class="footer-sub">Random Forest Model with SMOTE Resampling • 24 Features Analyzed</p>
+            <p class="footer-sub">LightGBM Model with SMOTE Resampling • SHAP Explainability • 25 Features Analyzed</p>
         </footer>
     </div>
 
@@ -1403,7 +1572,62 @@
             document.getElementById('risk-level-value').textContent = result.risk_level;
             document.getElementById('risk-level-value').style.color = result.risk_color;
             
+            // Display SHAP explanations
+            displayShapExplanations(result.shap_explanations);
+            
             document.getElementById('results-content').classList.add('slide-up');
+        }
+
+        function displayShapExplanations(explanations) {
+            const shapSection = document.getElementById('shap-section');
+            const shapContainer = document.getElementById('shap-explanations');
+            
+            if (!explanations || explanations.length === 0) {
+                shapSection.style.display = 'none';
+                return;
+            }
+            
+            shapSection.style.display = 'block';
+            
+            // Find max absolute impact for scaling
+            const maxImpact = Math.max(...explanations.map(e => e.abs_impact));
+            
+            let html = '';
+            explanations.forEach((exp, index) => {
+                const isPositive = exp.impact > 0;
+                const barWidth = maxImpact > 0 ? (exp.abs_impact / maxImpact) * 50 : 0; // 50% max width from center
+                const direction = isPositive ? 'increases fraud risk' : 'decreases fraud risk';
+                const directionClass = isPositive ? 'positive' : 'negative';
+                
+                html += `
+                    <div class="shap-item" style="animation-delay: ${index * 0.1}s">
+                        <div class="shap-feature-row">
+                            <span class="shap-feature-name">${exp.feature}</span>
+                            <span class="shap-impact-value ${directionClass}">${exp.impact > 0 ? '+' : ''}${exp.impact.toFixed(3)}</span>
+                        </div>
+                        <div class="shap-bar-container">
+                            <div class="shap-bar-center"></div>
+                            <div class="shap-bar ${directionClass}" style="width: ${barWidth}%"></div>
+                        </div>
+                        <span class="shap-direction ${directionClass}">${direction}</span>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div class="shap-legend">
+                    <div class="legend-item">
+                        <span class="legend-dot negative"></span>
+                        <span>Decreases Risk</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot positive"></span>
+                        <span>Increases Risk</span>
+                    </div>
+                </div>
+            `;
+            
+            shapContainer.innerHTML = html;
         }
 
         function animateGauge(probability) {
