@@ -7,33 +7,59 @@ import os
 import pickle
 import warnings
 import numpy as np
-import shap
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 
 # Suppress sklearn version warnings
 warnings.filterwarnings('ignore')
 
+# Try to import shap, but make it optional
+try:
+    import shap
+    SHAP_AVAILABLE = True
+    print("SHAP library loaded successfully")
+except ImportError as e:
+    SHAP_AVAILABLE = False
+    print(f"SHAP library not available: {e}")
+    shap = None
+
 app = Flask(__name__)
 CORS(app)
 
 # Get model path
 def get_model_path():
-    """Get the model path, checking multiple locations"""
+    """Get the model path, checking multiple locations for LightGBM first, then Random Forest as fallback"""
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    possible_paths = [
+    
+    # Try LightGBM model first
+    lgb_paths = [
         os.path.join(base_dir, 'model', 'lgb_model_with_thresholds.pkl'),
         os.path.join(base_dir, '..', 'best_model', 'lgb_model_with_thresholds.pkl'),
         'model/lgb_model_with_thresholds.pkl',
     ]
-    for path in possible_paths:
+    
+    for path in lgb_paths:
         if os.path.exists(path):
-            print(f"Found model at: {path}")
-            return path
-    print(f"Model not found. Checked: {possible_paths}")
-    return possible_paths[0]
+            print(f"Found LightGBM model at: {path}")
+            return path, 'LightGBM'
+    
+    # Fallback to Random Forest model
+    rf_paths = [
+        os.path.join(base_dir, 'model', 'rf_model_with_thresholds.pkl'),
+        os.path.join(base_dir, '..', 'best_model', 'rf_model_with_thresholds.pkl'),
+        'model/rf_model_with_thresholds.pkl',
+    ]
+    
+    for path in rf_paths:
+        if os.path.exists(path):
+            print(f"Found Random Forest model at: {path}")
+            return path, 'RandomForest'
+    
+    print(f"No model found. Checked LightGBM paths: {lgb_paths}")
+    print(f"Checked Random Forest paths: {rf_paths}")
+    return lgb_paths[0], 'LightGBM'
 
-MODEL_PATH = get_model_path()
+MODEL_PATH, MODEL_TYPE = get_model_path()
 
 # Global variables for model and explainer
 model_package = None
@@ -44,21 +70,63 @@ def load_model():
     global shap_explainer
     try:
         print(f"Loading model from: {MODEL_PATH}")
+        print(f"Model file exists: {os.path.exists(MODEL_PATH)}")
+        
+        if not os.path.exists(MODEL_PATH):
+            print(f"ERROR: Model file not found at {MODEL_PATH}")
+            # List available files in model directory
+            model_dir = os.path.dirname(MODEL_PATH)
+            if os.path.exists(model_dir):
+                print(f"Files in {model_dir}: {os.listdir(model_dir)}")
+            return None
+        
         with open(MODEL_PATH, 'rb') as f:
             loaded_package = pickle.load(f)
         print("Model loaded successfully!")
+        print(f"Model package keys: {loaded_package.keys() if isinstance(loaded_package, dict) else 'Not a dict'}")
         
         # Initialize SHAP explainer for LightGBM
         model = loaded_package['model']
-        shap_explainer = shap.TreeExplainer(model)
-        print("SHAP explainer initialized successfully!")
+        print(f"Model type: {type(model)}")
+        
+        if SHAP_AVAILABLE:
+            try:
+                shap_explainer = shap.TreeExplainer(model)
+                print("SHAP explainer initialized successfully!")
+            except Exception as shap_error:
+                print(f"Warning: Could not initialize SHAP explainer: {shap_error}")
+                shap_explainer = None
+        else:
+            print("SHAP not available, skipping explainer initialization")
+            shap_explainer = None
         
         return loaded_package
     except Exception as e:
+        import traceback
         print(f"Error loading model: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
         return None
 
+# Print startup diagnostics
+print("=" * 50)
+print("NovaPay Fraud Detection - Starting Up")
+print("=" * 50)
+print(f"Working directory: {os.getcwd()}")
+print(f"Script directory: {os.path.dirname(os.path.abspath(__file__))}")
+print(f"Model path: {MODEL_PATH}")
+print(f"Model type: {MODEL_TYPE}")
+print(f"SHAP available: {SHAP_AVAILABLE}")
+
+# List model directory contents
+model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'model')
+if os.path.exists(model_dir):
+    print(f"Model directory contents: {os.listdir(model_dir)}")
+else:
+    print(f"Model directory does not exist: {model_dir}")
+
 model_package = load_model()
+print(f"Model loaded: {model_package is not None}")
+print("=" * 50)
 
 # Feature mappings
 CATEGORICAL_MAPPINGS = {
@@ -168,7 +236,7 @@ def get_shap_explanations(features, top_n=5):
     """Get SHAP explanations for a prediction"""
     global shap_explainer
     
-    if shap_explainer is None:
+    if not SHAP_AVAILABLE or shap_explainer is None:
         return []
     
     try:
@@ -217,8 +285,10 @@ def health():
     return jsonify({
         'status': 'healthy',
         'model_loaded': model_package is not None,
+        'shap_available': SHAP_AVAILABLE,
         'shap_enabled': shap_explainer is not None,
-        'model_type': 'LightGBM'
+        'model_type': MODEL_TYPE,
+        'model_path': MODEL_PATH
     })
 
 
