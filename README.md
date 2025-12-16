@@ -2,36 +2,39 @@
 
 A professional machine learning-powered web application for detecting fraudulent transactions in real-time.
 
-![Fraud Detection](https://img.shields.io/badge/ML-Random%20Forest-green) ![Accuracy](https://img.shields.io/badge/Accuracy-98.5%25-blue) ![Python](https://img.shields.io/badge/Python-3.8%2B-yellow)
+![Fraud Detection](https://img.shields.io/badge/ML-LightGBM-brightgreen) ![Accuracy](https://img.shields.io/badge/Accuracy-98%25-blue) ![Python](https://img.shields.io/badge/Python-3.8%2B-yellow) ![SHAP](https://img.shields.io/badge/Explainability-SHAP-orange)
 
 ## 🎯 Project Overview
 
-This project provides an end-to-end fraud detection solution for NovaPay, a cross-border digital money transfer platform. The system uses a trained Random Forest classifier to analyze transaction features and predict the likelihood of fraudulent activity.
+This project provides an end-to-end fraud detection solution for NovaPay, a cross-border digital money transfer platform. The system uses a trained LightGBM classifier to analyze transaction features and predict the likelihood of fraudulent activity with SHAP-based explainability.
 
 ### Key Features
-- **Real-time Fraud Prediction**: Analyze transactions instantly with 24 key features
+- **Real-time Fraud Prediction**: Analyze transactions instantly with 22 key features
+- **SHAP Explainability**: Understand why the model made its prediction
 - **Risk Level Assessment**: Get detailed risk levels (MINIMAL, LOW, MEDIUM, HIGH, CRITICAL)
 - **Actionable Recommendations**: Receive specific actions for each risk level
 - **Beautiful UI**: Modern, dark-themed interface with animated visualizations
-- **98.5% Accuracy**: Trained model with high precision and recall
+- **98% Accuracy**: Trained model with high precision and F1-Score of 0.88
 
 ## 📁 Project Structure
 
 ```
 novaPay_fraud_detection_model/
 ├── best_model/
-│   └── rf_model_with_thresholds.pkl    # Trained Random Forest model
+│   └── lgb_model_with_thresholds.pkl   # Trained LightGBM model
 ├── cleaned data/
 │   └── nova_master_df.csv              # Preprocessed dataset
 ├── raw data/
 │   └── nova_pay_merged.csv             # Raw merged data
 ├── notebooks/
-│   ├── NovaPay_Data_Cleaning_&_Preprocessing.ipynb
+│   ├── NovaPay_Data_Cleaning.ipynb
 │   ├── NovaPay_EDA.ipynb
 │   └── NovaPay_Model_Training.ipynb
 ├── webapp/
-│   ├── app.py                          # Flask backend
+│   ├── app.py                          # Flask backend with SHAP
 │   ├── requirements.txt                # Python dependencies
+│   ├── model/
+│   │   └── lgb_model_with_thresholds.pkl  # Deployed model
 │   ├── templates/
 │   │   └── index.html                  # Main HTML template
 │   └── static/
@@ -69,7 +72,7 @@ novaPay_fraud_detection_model/
 
 ## 🔍 Features Analyzed
 
-The model analyzes 24 transaction features:
+The model analyzes 22 transaction features:
 
 ### Geographic & Currency
 - Home Country (US, CA, UK)
@@ -103,20 +106,15 @@ The model analyzes 24 transaction features:
 - Day of Week
 - Time Period (Day, Evening, Night, Late Night)
 
-### Risk Indicators (Auto-calculated)
-- Fee Risk Bracket
-- IP Risk Score Bracket
-- Device Trust Bucket
-
 ## 📊 Model Performance
 
 | Metric | Score |
 |--------|-------|
-| Accuracy | 98.5% |
-| Precision | 100% |
-| Recall | 83.3% |
-| F1-Score | 0.91 |
-| ROC AUC | 0.94 |
+| Accuracy | 98% |
+| Precision | High |
+| Recall | High |
+| F1-Score | 0.88 |
+| ROC AUC | High |
 
 ## 🎨 User Interface
 
@@ -139,21 +137,24 @@ The web application features:
 
 ## 🔧 Technical Details
 
-### Model: Random Forest Classifier
+### Model: LightGBM Classifier
 - **Training Method**: SMOTE for class imbalance handling
-- **Best Threshold**: 9% (optimized via ROC curve)
-- **Features**: 24 engineered features
+- **Best Threshold**: ~86% (optimized via ROC curve)
+- **Features**: 22 engineered features
 - **Preprocessing**: Label encoding + Robust/Standard scaling
+- **Explainability**: SHAP (SHapley Additive exPlanations) integration
 
 ### Backend: Flask
 - RESTful API endpoints
 - JSON request/response
 - Model inference with probability scores
+- SHAP explanations for predictions
 
 ### Frontend: HTML/CSS/JavaScript
 - Vanilla JavaScript (no frameworks)
 - CSS animations and transitions
 - Real-time form validation
+- Interactive SHAP visualization
 
 ## 📝 API Endpoints
 
@@ -196,7 +197,7 @@ Get dropdown options for the form.
 - [ ] Add user authentication
 - [ ] Implement transaction history logging
 - [ ] Add batch prediction capability
-- [ ] Integrate SHAP for model explainability
+- [x] ~~Integrate SHAP for model explainability~~ ✅ Implemented
 - [ ] Deploy with Docker container
 - [ ] Add real-time model retraining pipeline
 

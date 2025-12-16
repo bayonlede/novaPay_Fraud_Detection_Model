@@ -6,7 +6,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     initializeForm();
     initializeSliders();
-    initializeRiskIndicators();
     addFormAnimations();
 });
 
@@ -58,33 +57,7 @@ function collectFormData() {
         }
     });
     
-    // Add auto-calculated risk brackets
-    data.fee_bracket = calculateFeeBracket(data.fee);
-    data.ip_risk_score_bracket = calculateIPRiskBracket(data.ip_risk_score);
-    data.device_trust_bucket = calculateDeviceTrustBucket(data.device_trust_score);
-    
     return data;
-}
-
-/**
- * Calculate fee bracket based on fee value
- */
-function calculateFeeBracket(fee) {
-    return fee > 9998.99 ? 'high risk' : 'no risk';
-}
-
-/**
- * Calculate IP risk bracket based on IP risk score
- */
-function calculateIPRiskBracket(score) {
-    return score > 0.9 ? 'high risk' : 'no risk';
-}
-
-/**
- * Calculate device trust bucket based on device trust score
- */
-function calculateDeviceTrustBucket(score) {
-    return score < 0.3 ? 'high risk' : 'no risk';
 }
 
 /**
@@ -249,7 +222,6 @@ function initializeSliders() {
         // Update on change
         slider.addEventListener('input', () => {
             updateSliderValue(slider, valueDisplay);
-            updateRiskIndicators();
         });
     });
 }
@@ -264,58 +236,6 @@ function updateSliderValue(slider, display) {
     // Update slider track color
     const percent = ((value - slider.min) / (slider.max - slider.min)) * 100;
     slider.style.background = `linear-gradient(to right, var(--accent-primary) 0%, var(--accent-primary) ${percent}%, var(--bg-input) ${percent}%, var(--bg-input) 100%)`;
-}
-
-/**
- * Initialize risk indicator auto-calculation
- */
-function initializeRiskIndicators() {
-    // Listen to relevant inputs
-    const feeInput = document.getElementById('fee');
-    const ipRiskInput = document.getElementById('ip_risk_score');
-    const deviceTrustInput = document.getElementById('device_trust_score');
-    
-    [feeInput, ipRiskInput, deviceTrustInput].forEach(input => {
-        input.addEventListener('input', updateRiskIndicators);
-    });
-    
-    // Initial update
-    updateRiskIndicators();
-}
-
-/**
- * Update risk indicators based on current values
- */
-function updateRiskIndicators() {
-    const fee = parseFloat(document.getElementById('fee').value) || 0;
-    const ipRisk = parseFloat(document.getElementById('ip_risk_score').value) || 0;
-    const deviceTrust = parseFloat(document.getElementById('device_trust_score').value) || 0;
-    
-    // Fee bracket
-    const feeBracket = calculateFeeBracket(fee);
-    updateIndicator('fee_bracket', feeBracket);
-    
-    // IP Risk bracket
-    const ipBracket = calculateIPRiskBracket(ipRisk);
-    updateIndicator('ip_risk_bracket', ipBracket);
-    
-    // Device trust bucket
-    const deviceBucket = calculateDeviceTrustBucket(deviceTrust);
-    updateIndicator('device_trust', deviceBucket);
-}
-
-/**
- * Update a risk indicator display
- */
-function updateIndicator(id, value) {
-    const indicator = document.getElementById(`${id}_indicator`);
-    const display = document.getElementById(`${id}_display`);
-    
-    if (indicator && display) {
-        const isHighRisk = value === 'high risk';
-        indicator.className = 'risk-indicator ' + (isHighRisk ? 'high-risk' : 'no-risk');
-        display.textContent = isHighRisk ? 'High Risk' : 'No Risk';
-    }
 }
 
 /**
@@ -450,7 +370,6 @@ window.loadTestScenario = function(scenario) {
                 }
             }
         });
-        updateRiskIndicators();
     }
 };
 

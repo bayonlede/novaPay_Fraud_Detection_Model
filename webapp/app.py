@@ -138,10 +138,7 @@ CATEGORICAL_MAPPINGS = {
     'kyc_tier': {'ENHANCED': 0, 'LOW': 1, 'STANDARD': 2},
     'new_device': {False: 0, True: 1},
     'days_only': {'Friday': 0, 'Monday': 1, 'Saturday': 2, 'Sunday': 3, 'Thursday': 4, 'Tuesday': 5, 'Wednesday': 6},
-    'period_of_the_day': {'Day': 0, 'Evening': 1, 'Late Night': 2, 'Night': 3},
-    'fee_bracket': {'high risk': 0, 'no risk': 1},
-    'ip_risk_score_bracket': {'high risk': 0, 'no risk': 1},
-    'device_trust_bucket': {'high risk': 0, 'no risk': 1}
+    'period_of_the_day': {'Day': 0, 'Evening': 1, 'Late Night': 2, 'Night': 3}
 }
 
 FEATURE_ORDER = [
@@ -151,8 +148,7 @@ FEATURE_ORDER = [
     'kyc_tier', 'account_age_days', 'device_trust_score',
     'chargeback_history_count', 'risk_score_internal', 'txn_velocity_1h',
     'txn_velocity_24h', 'corridor_risk', 'days_only',
-    'period_of_the_day', 'fee_bracket', 'ip_risk_score_bracket',
-    'device_trust_bucket'
+    'period_of_the_day'
 ]
 
 # Human-readable feature names for SHAP explanations
@@ -178,10 +174,7 @@ FEATURE_DISPLAY_NAMES = {
     'txn_velocity_24h': 'Txns (24 Hours)',
     'corridor_risk': 'Corridor Risk',
     'days_only': 'Day of Week',
-    'period_of_the_day': 'Time Period',
-    'fee_bracket': 'Fee Risk Bracket',
-    'ip_risk_score_bracket': 'IP Risk Bracket',
-    'device_trust_bucket': 'Device Trust Bucket'
+    'period_of_the_day': 'Time Period'
 }
 
 ROBUST_SCALE_PARAMS = {
