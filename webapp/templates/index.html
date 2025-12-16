@@ -1381,7 +1381,7 @@
                             <div class="form-group">
                                 <label for="amount_src">Source Amount</label>
                                 <div class="input-with-icon">
-                                    <span class="input-icon">$</span>
+                                    <span class="input-icon" id="source_currency_symbol">$</span>
                                     <input type="number" id="amount_src" name="amount_src" step="0.01" min="0" value="250.00" required>
                                 </div>
                             </div>
@@ -2029,6 +2029,26 @@
                 document.getElementById('location_mismatch').checked = mismatch;
             });
         });
+
+        // Currency symbols mapping
+        const currencySymbols = {
+            'USD': '$',
+            'CAD': 'C$',
+            'GBP': '£'
+        };
+
+        // Auto-update source currency symbol
+        const sourceCurrencySelect = document.getElementById('source_currency');
+        const sourceCurrencySymbol = document.getElementById('source_currency_symbol');
+        
+        function updateSourceCurrencySymbol() {
+            const currency = sourceCurrencySelect.value;
+            sourceCurrencySymbol.textContent = currencySymbols[currency] || '$';
+        }
+        
+        sourceCurrencySelect.addEventListener('change', updateSourceCurrencySymbol);
+        // Initialize on page load
+        updateSourceCurrencySymbol();
 
         // SHAP Modal Functions
         function openShapModal() {
