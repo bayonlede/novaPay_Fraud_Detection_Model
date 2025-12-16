@@ -750,7 +750,29 @@
             align-items: center;
             gap: 12px;
             padding-top: 20px;
-            border-top: 1px solid var(--border-color);
+        }
+
+        .shap-learn-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: rgba(17, 138, 178, 0.1);
+            border: 1px solid rgba(17, 138, 178, 0.3);
+            border-radius: 100px;
+            color: var(--accent-secondary);
+            font-family: var(--font-primary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            margin-top: 8px;
+        }
+
+        .shap-learn-btn:hover {
+            background: rgba(17, 138, 178, 0.2);
+            border-color: rgba(17, 138, 178, 0.5);
+            transform: translateY(-2px);
         }
 
         .model-badge {
@@ -1651,6 +1673,14 @@
                             <span>•</span>
                             <span>SHAP Enabled</span>
                         </div>
+                        <button class="shap-learn-btn" onclick="openShapModal()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                <path d="M12 17h.01"/>
+                            </svg>
+                            <span>What is SHAP Analysis?</span>
+                        </button>
                     </div>
                 </div>
             </section>
