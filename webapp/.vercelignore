@@ -1,0 +1,10 @@
+# Ignore large/unnecessary files
+model/rf_model_with_thresholds.pkl
+__pycache__
+*.pyc
+.git
+.gitignore
+Procfile
+railway.toml
+nixpacks.toml
+Aptfile
